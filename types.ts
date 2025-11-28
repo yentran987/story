@@ -9,7 +9,8 @@ export enum View {
   PROFILE = 'PROFILE',
   LIBRARY = 'LIBRARY',
   ADMIN_LOGIN = 'ADMIN_LOGIN',
-  CMS = 'CMS'
+  CMS = 'CMS',
+  AUTHOR_DASHBOARD = 'AUTHOR_DASHBOARD'
 }
 
 export interface Chapter {

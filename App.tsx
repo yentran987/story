@@ -14,6 +14,8 @@ import { Profile } from './pages/Profile';
 import { StoryDetail } from './pages/StoryDetail';
 import { AdminLogin } from './pages/AdminLogin';
 import { CMS } from './pages/CMS';
+import { AuthorDashboard } from './pages/AuthorDashboard';
+import { supabase } from './services/supabase';
 
 export default function App() {
   const [currentView, setView] = useState<View>(View.LANDING);
@@ -38,6 +40,38 @@ export default function App() {
   const [readerStartIndex, setReaderStartIndex] = useState<number>(0);
   
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
+
+  // Supabase Auth Listener
+  useEffect(() => {
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          name: session.user.email?.split('@')[0] || 'Dreamer',
+          avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${session.user.id}`,
+          isAuthor: true,
+          isAdmin: session.user.user_metadata?.role === 'admin'
+        });
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          name: session.user.email?.split('@')[0] || 'Dreamer',
+          avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${session.user.id}`,
+          isAuthor: true,
+          isAdmin: session.user.user_metadata?.role === 'admin'
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Load Content from LocalStorage on mount
   useEffect(() => {
@@ -78,12 +112,12 @@ export default function App() {
   };
 
   const handleLogin = (userData: User) => {
-    setUser(userData);
+    // setUser is handled by Supabase subscription
     navigateTo(View.BROWSE);
   };
 
-  const handleLogout = () => {
-    setUser(null);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setHistory([]);
     setView(View.LANDING);
   };
@@ -128,13 +162,23 @@ export default function App() {
       }));
   };
 
-  // Nav Bar "Write" -> New Story
+  // Nav Bar "Write" -> Dashboard
   const handleStartWriting = () => {
-    setStoryToEdit(null); // Reset for new story
-    navigateTo(View.EDITOR);
+    if (!user) {
+        showToast("Please sign in to start writing", "error");
+        navigateTo(View.AUTH);
+        return;
+    }
+    navigateTo(View.AUTHOR_DASHBOARD);
   };
 
-  // Library "Edit" -> Edit Existing Story
+  // Dashboard "Create New" -> Editor (Empty)
+  const handleCreateNewStory = () => {
+    setStoryToEdit(null); // Reset for new story
+    navigateTo(View.EDITOR);
+  }
+
+  // Dashboard/Library "Edit" -> Editor (Populated)
   const handleEditStory = (story: Story) => {
     setStoryToEdit(story);
     navigateTo(View.EDITOR);
@@ -171,7 +215,7 @@ export default function App() {
           setStories([updatedStory, ...stories]);
           showToast("New story created!", "success");
       }
-      navigateTo(View.LIBRARY);
+      navigateTo(View.AUTHOR_DASHBOARD);
   };
 
   const handleToggleLibrary = (story: Story) => {
@@ -200,12 +244,13 @@ export default function App() {
         return (
             <Landing 
                 setView={(view) => {
-                    if (view === View.EDITOR) handleStartWriting();
+                    if (view === View.EDITOR || view === View.AUTHOR_DASHBOARD) handleStartWriting();
                     else navigateTo(view);
                 }} 
                 onSelectStory={handleSelectStory}
                 trendingStories={stories} 
                 content={landingContent}
+                user={user}
             />
         );
       case View.BROWSE:
@@ -233,12 +278,20 @@ export default function App() {
         return (
             <Editor 
                 setView={navigateTo} 
-                onBack={goBack}
+                onBack={() => navigateTo(View.AUTHOR_DASHBOARD)}
                 showToast={showToast} 
                 initialStory={storyToEdit}
                 onSaveStory={handleSaveStoryFromEditor}
             />
         );
+      case View.AUTHOR_DASHBOARD:
+        return user ? (
+            <AuthorDashboard 
+                stories={myStories} 
+                onCreateStory={handleCreateNewStory}
+                onEditStory={handleEditStory}
+            />
+        ) : <Auth onLogin={handleLogin} setView={navigateTo} />;
       case View.AUTH:
         return <Auth onLogin={handleLogin} setView={navigateTo} />;
       case View.LIBRARY:
@@ -287,11 +340,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-purple-200 selection:text-purple-900">
       {/* Conditionally render Navigation. Hide in Reader, Editor, CMS, AdminLogin */}
-      {![View.READING, View.EDITOR, View.CMS, View.ADMIN_LOGIN].includes(currentView) && (
+      {![View.READING, View.EDITOR, View.CMS, View.ADMIN_LOGIN, View.AUTHOR_DASHBOARD].includes(currentView) && (
         <Navigation 
           currentView={currentView} 
           setView={(view) => {
-            if (view === View.EDITOR) handleStartWriting();
+            if (view === View.EDITOR || view === View.AUTHOR_DASHBOARD) handleStartWriting();
             else navigateTo(view);
           }} 
           user={user} 
@@ -299,6 +352,31 @@ export default function App() {
         />
       )}
       
+      {/* Render Custom Navigation for Author Dashboard if needed, or include it in the main switch */}
+      {currentView === View.AUTHOR_DASHBOARD && (
+          <nav className="sticky top-0 z-50 w-full border-b border-slate-800 bg-slate-950 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between h-16 items-center">
+                    <div className="flex items-center cursor-pointer gap-2" onClick={() => setView(View.LANDING)}>
+                        <div className="bg-purple-600 p-2 rounded-lg">
+                            <span className="text-white font-bold">SW</span>
+                        </div>
+                        <span className="text-xl font-bold text-white font-serif">StoryWeave Author</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => setView(View.LANDING)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium">Exit Studio</button>
+                        <div className="w-px h-6 bg-slate-800"></div>
+                        {user && (
+                            <div className="flex items-center gap-2">
+                                <img src={user.avatar} className="w-8 h-8 rounded-full border border-slate-700" />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+          </nav>
+      )}
+
       <main>
         {renderContent()}
       </main>

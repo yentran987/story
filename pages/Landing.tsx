@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Story, LandingPageContent } from '../types';
+import { View, Story, LandingPageContent, User } from '../types';
 import { Edit, Play, BookOpen, Sparkles, Settings } from 'lucide-react';
 
 interface LandingProps {
@@ -8,9 +8,10 @@ interface LandingProps {
   onSelectStory: (story: Story) => void;
   trendingStories: Story[];
   content: LandingPageContent;
+  user?: User | null;
 }
 
-export const Landing: React.FC<LandingProps> = ({ setView, onSelectStory, trendingStories, content }) => {
+export const Landing: React.FC<LandingProps> = ({ setView, onSelectStory, trendingStories, content, user }) => {
   const { hero, stats, trending, features, cta } = content;
 
   return (

@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { View, User } from '../types';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 interface AuthProps {
   onLogin: (user: User) => void;
@@ -9,18 +11,63 @@ interface AuthProps {
 
 export const Auth: React.FC<AuthProps> = ({ onLogin, setView }) => {
   const [isLogin, setIsLogin] = useState(true);
-  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login with form data
-    const mockUser: User = {
-      id: Date.now().toString(),
-      name: name || 'Dreamer',
-      avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${name || 'Dreamer'}`,
-      isAuthor: true
-    };
-    onLogin(mockUser);
+    setLoading(true);
+    setError('');
+    setMessage('');
+
+    try {
+      if (isLogin) {
+        // Sign In
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+        
+        if (data.user) {
+            const userData: User = {
+                id: data.user.id,
+                name: data.user.email?.split('@')[0] || 'Dreamer',
+                avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${data.user.id}`,
+                isAuthor: true
+            };
+            onLogin(userData);
+        }
+      } else {
+        // Sign Up
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        if (data.user && !data.session) {
+            setMessage("Sign up successful! Please check your email for the confirmation link.");
+        } else if (data.user && data.session) {
+            const userData: User = {
+                id: data.user.id,
+                name: data.user.email?.split('@')[0] || 'Dreamer',
+                avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${data.user.id}`,
+                isAuthor: true
+            };
+            onLogin(userData);
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,37 +91,55 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, setView }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {!isLogin && (
-             <div>
-               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Username</label>
-               <input 
-                 type="text" 
-                 className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition-all" 
-                 value={name}
-                 onChange={(e) => setName(e.target.value)}
-                 required
-               />
-             </div>
-          )}
-          
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email</label>
-            <input type="email" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition-all" defaultValue="alex@example.com" />
+            <input 
+                type="email" 
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition-all" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+            />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Password</label>
-            <input type="password" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition-all" defaultValue="password" />
+            <input 
+                type="password" 
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition-all" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+            />
           </div>
 
-          <button type="submit" className="w-full py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg transition-all shadow-xl hover:-translate-y-1">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-lg text-center animate-fade-in">
+              {error}
+            </div>
+          )}
+
+          {message && (
+            <div className="p-3 bg-green-50 border border-green-100 text-green-600 text-xs font-bold rounded-lg text-center animate-fade-in">
+              {message}
+            </div>
+          )}
+
+          <button type="submit" disabled={loading} className="w-full py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg transition-all shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
             {isLogin ? 'Sign In' : 'Create Account'}
           </button>
         </form>
 
         <div className="mt-8 text-center">
           <button 
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+                setIsLogin(!isLogin);
+                setError('');
+                setMessage('');
+            }}
             className="text-sm text-slate-500 hover:text-purple-600 font-medium transition-colors"
           >
             {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login"}

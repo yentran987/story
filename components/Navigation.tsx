@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { View, User } from '../types';
 import { BookOpen, Search, LogOut } from 'lucide-react';
@@ -41,8 +42,8 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, setView, us
              </button>
             )}
             <button 
-              onClick={() => user ? setView(View.EDITOR) : setView(View.AUTH)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${currentView === View.EDITOR ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'}`}
+              onClick={() => user ? setView(View.AUTHOR_DASHBOARD) : setView(View.AUTH)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${currentView === View.AUTHOR_DASHBOARD || currentView === View.EDITOR ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'}`}
             >
               Write
             </button>
