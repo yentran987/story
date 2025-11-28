@@ -16,6 +16,7 @@ import { AdminLogin } from './pages/AdminLogin';
 import { CMS } from './pages/CMS';
 import { AuthorDashboard } from './pages/AuthorDashboard';
 import { supabase } from './services/supabase';
+import { BookOpen } from 'lucide-react';
 
 export default function App() {
   const [currentView, setView] = useState<View>(View.LANDING);
@@ -352,23 +353,25 @@ export default function App() {
         />
       )}
       
-      {/* Render Custom Navigation for Author Dashboard if needed, or include it in the main switch */}
+      {/* Render Custom Navigation for Author Dashboard */}
       {currentView === View.AUTHOR_DASHBOARD && (
-          <nav className="sticky top-0 z-50 w-full border-b border-slate-800 bg-slate-950 shadow-sm">
+          <nav className="sticky top-0 z-50 w-full border-b border-indigo-100 bg-white/80 backdrop-blur-md shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
                     <div className="flex items-center cursor-pointer gap-2" onClick={() => setView(View.LANDING)}>
-                        <div className="bg-purple-600 p-2 rounded-lg">
-                            <span className="text-white font-bold">SW</span>
+                        <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-2 rounded-xl shadow-lg shadow-purple-200">
+                            <BookOpen className="text-white h-5 w-5" />
                         </div>
-                        <span className="text-xl font-bold text-white font-serif">StoryWeave Author</span>
+                        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 font-serif">
+                            StoryWeave Author
+                        </span>
                     </div>
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setView(View.LANDING)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium">Exit Studio</button>
-                        <div className="w-px h-6 bg-slate-800"></div>
+                        <button onClick={goBack} className="text-slate-500 hover:text-indigo-600 transition-colors text-sm font-bold uppercase tracking-wide">Exit Studio</button>
+                        <div className="w-px h-6 bg-slate-200"></div>
                         {user && (
                             <div className="flex items-center gap-2">
-                                <img src={user.avatar} className="w-8 h-8 rounded-full border border-slate-700" />
+                                <img src={user.avatar} className="w-8 h-8 rounded-full border border-indigo-100" alt="User Avatar" />
                             </div>
                         )}
                     </div>
