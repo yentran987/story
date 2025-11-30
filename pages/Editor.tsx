@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Story, Chapter } from '../types';
-import { geminiService } from '../services/geminiService';
+import { unifiedAIService } from '../services/unifiedAIService';
 import { Save, ArrowLeft, Wand2, Tag, AlertTriangle, Plus, Trash2, GripVertical, Settings, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 interface EditorProps {
@@ -111,7 +111,7 @@ export const Editor: React.FC<EditorProps> = ({ setView, onBack, showToast, init
     const handleGenerateIdea = async (type: 'twist' | 'rewrite') => {
     setIsAiLoading(true);
     const context = activeChapter.content.slice(-500) || title;
-        const result = await geminiService.generateStoryIdeas(context, type, aiLanguage);
+        const result = await unifiedAIService.generateStoryIdeas(context, type, aiLanguage);
     setAiSuggestion(result);
     setIsAiLoading(false);
   };
@@ -122,7 +122,7 @@ export const Editor: React.FC<EditorProps> = ({ setView, onBack, showToast, init
         return;
     }
     setIsAiLoading(true);
-        const result = await geminiService.autoTagStory(activeChapter.content, aiLanguage);
+        const result = await unifiedAIService.autoTagStory(activeChapter.content, aiLanguage);
     setGenre(result.genre);
     setTags(result.tags.join(', '));
     setIsAiLoading(false);
@@ -136,7 +136,7 @@ export const Editor: React.FC<EditorProps> = ({ setView, onBack, showToast, init
       }
       setIsAiLoading(true);
       setModerationResult(null);
-      const result = await geminiService.moderateContent(activeChapter.content, aiLanguage);
+      const result = await unifiedAIService.moderateContent(activeChapter.content, aiLanguage);
       if (result.status === 'approved') {
           setModerationResult('approved');
           setModerationMessage(result.message || null);
@@ -462,3 +462,4 @@ export const Editor: React.FC<EditorProps> = ({ setView, onBack, showToast, init
     </div>
   );
 };
+
